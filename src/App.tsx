@@ -1,26 +1,54 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import "./App.css";
+import { LITCF_API } from "./lib/api";
+import { VideoInfo } from "./lib/api/models";
+import Video from "./lib/components/Video";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+import React, { Component } from "react";
+import { ImageList, List, ListItem } from "@mui/material";
+
+interface IState {
+  videos: Array<VideoInfo>;
+  userId: string;
 }
 
-export default App;
+export default class App extends Component<{}, IState> {
+  GATEWAY_HOST = "http://localhost:8787/";
+
+  api: LITCF_API;
+
+  constructor(props: {}) {
+    super(props);
+    this.state = {
+      videos: [],
+      userId: "ad689a4c7ee776c5c881c7e04cad097b",
+    };
+
+    this.api = new LITCF_API(this.GATEWAY_HOST, this.state.userId);
+
+    this.api.listVideos().then((videos) => this.setState({ videos }));
+  }
+
+  componentDidMount() {}
+
+  render() {
+    return (
+      <div className="App">
+        <ImageList
+        // sx={{ width: "100%", maxWidth: 360, bgcolor: "background.paper" }}
+        >
+          {!this.state.videos.length
+            ? "Loading"
+            : this.state.videos?.map((x) => (
+                <ListItem alignItems="flex-start">
+                  <Video
+                    gateway={this.GATEWAY_HOST}
+                    userId={this.state.userId}
+                    videoId={x.id}
+                  />
+                </ListItem>
+              ))}
+        </ImageList>
+      </div>
+    );
+  }
+}
