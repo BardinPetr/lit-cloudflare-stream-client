@@ -3,8 +3,7 @@ import { LITCF_API } from "../api";
 import { Optional, VideoInfo } from "../api/models";
 import { LitNodeClient, checkAndSignAuthMessage } from "lit-js-sdk";
 import {
-  Card,
-  CardContent,
+  Modal,
   Typography,
   IconButton,
   ImageListItemBar,
@@ -14,10 +13,16 @@ import {
   Container,
   Box,
   LinearProgress,
-  Fab,
   Backdrop,
+  SxProps,
+  Button,
+  DialogActions,
+  DialogContentText,
+  DialogContent,
+  DialogTitle,
+  Dialog,
 } from "@mui/material";
-import { Lock, LockOpen } from "@mui/icons-material";
+import { Lock } from "@mui/icons-material";
 import { Stream } from "@cloudflare/stream-react";
 
 interface IProps {
@@ -34,6 +39,8 @@ interface IState extends Optional<VideoInfo> {
   authenticating: boolean;
   streamUrl: string;
   chain: string;
+  errorText: string;
+  errorDescription: string;
 }
 
 export default class Video extends Component<IProps, IState> {
@@ -49,6 +56,8 @@ export default class Video extends Component<IProps, IState> {
       authenticating: false,
       streamUrl: "",
       chain: this.props.chain ?? "ropsten",
+      errorText: "",
+      errorDescription: "",
     };
 
     this.lit = new LitNodeClient();
@@ -88,7 +97,7 @@ export default class Video extends Component<IProps, IState> {
         path: `/video/${this.state.id}`,
         orgId: this.props.userId,
         role: "viewer",
-        extraData: "downloadable",
+        extraData: "",
       };
 
       const jwt = await this.lit.getSignedToken({
@@ -98,9 +107,21 @@ export default class Video extends Component<IProps, IState> {
         resourceId,
       });
 
-      console.log(jwt);
+      const url = await this.api.getToken(this.state.id, jwt);
+      if (url) {
+        this.setState({
+          locked: false,
+          streamUrl: url,
+        });
+      } else {
+        throw new Error("Token wasn't accepter by gateway server");
+      }
     } catch (ex) {
-      console.error(ex);
+      this.setState({
+        errorText: "Failed to unlock",
+        // errorDescription: ex,
+      });
+    } finally {
       this.setState({
         authenticating: false,
       });
@@ -109,48 +130,65 @@ export default class Video extends Component<IProps, IState> {
 
   render() {
     return (
-      <div>
-        <ImageListItem key={this.state.id}>
-          <Paper
-            sx={{ width: "20vw", display: "inline-block" }}
-            variant="outlined"
-          >
-            {this.state.loaded ? (
-              this.state.locked ? (
-                <Box>
-                  <img
-                    style={{ width: "100%" }}
-                    src={this.state.thumbnail}
-                    alt={this.state.name}
-                    loading="lazy"
-                  />
-                  <ImageListItemBar
-                    title={this.state.name}
-                    actionIcon={
-                      <IconButton
-                        onClick={this.unlockClicked}
-                        sx={{ color: "rgba(255, 255, 255, 0.54)" }}
-                      >
-                        <Lock />
-                      </IconButton>
-                    }
-                  />
-                </Box>
-              ) : (
-                <Stream controls src={this.state.streamUrl} />
-              )
-            ) : (
-              <LinearProgress sx={{ margin: "10px" }} />
-            )}
-          </Paper>
-        </ImageListItem>
+      <ImageListItem
+        key={this.state.id}
+        sx={{ width: "30vw", height: "fit-content" }}
+      >
+        {this.state.loaded ? (
+          this.state.locked ? (
+            <Box>
+              <img
+                style={{ width: "100%" }}
+                src={this.state.thumbnail}
+                alt={this.state.name}
+                loading="lazy"
+              />
+              <ImageListItemBar
+                title={this.state.name}
+                actionIcon={
+                  <IconButton
+                    onClick={this.unlockClicked}
+                    sx={{ color: "rgba(255, 255, 255, 0.54)" }}
+                  >
+                    <Lock />
+                  </IconButton>
+                }
+              />
+            </Box>
+          ) : (
+            <Stream controls src={this.state.streamUrl} className="stream" />
+          )
+        ) : (
+          <LinearProgress sx={{ margin: "10px" }} />
+        )}
         <Backdrop
           sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
           open={this.state.authenticating}
         >
           <CircularProgress color="inherit" />
         </Backdrop>
-      </div>
+
+        <Dialog
+          open={this.state.errorText !== ""}
+          onClose={() => this.setState({ errorText: "" })}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">
+            {this.state.errorText}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              {this.state.errorDescription}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => this.setState({ errorText: "" })}>
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </ImageListItem>
     );
   }
 }

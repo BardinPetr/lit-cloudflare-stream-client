@@ -32,7 +32,7 @@ export class LITCF_API {
     (await this.axios.get(`/upload`, this.genConf(jwt))).data;
 
   getToken = async (videoId: string, jwt: string): Promise<string> =>
-    (await this.axios.post(`/video/${videoId}`, {}, this.genConf(jwt))).data;
+    (await this.axios.get(`/video/${videoId}`, this.genConf(jwt))).data;
 
   setupVideo = async (
     id: string,
