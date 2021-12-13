@@ -30,3 +30,15 @@ export interface VideoSetupRequest {
 export type Optional<Type> = {
   [Property in keyof Type]+?: Type[Property];
 };
+
+export interface ACCResponse {
+  accSetup: AccessControlConditions;
+  accUpload: AccessControlConditions;
+}
+
+export interface RegisterRequest {
+  account: string;
+  token: string;
+  accSetup: AccessControlConditions;
+  accUpload: AccessControlConditions;
+}

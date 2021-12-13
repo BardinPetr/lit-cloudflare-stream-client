@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import { LITCF_API } from "../api";
 import { Optional, VideoInfo } from "../api/models";
-import { checkAndSignAuthMessage } from "lit-js-sdk";
+import { LitNodeClient, checkAndSignAuthMessage } from "lit-js-sdk";
 import {
   IconButton,
   ImageListItemBar,
@@ -10,40 +10,36 @@ import {
   Box,
   LinearProgress,
   Backdrop,
+  Button,
 } from "@mui/material";
 import { Lock } from "@mui/icons-material";
 import { Stream } from "@cloudflare/stream-react";
 import ResultDialog from "./ResultDialog";
 import { LITCFContext, ILITCFContext } from "../context/LITCFContext";
 
-interface IProps {
-  videoId: string;
-}
+interface IProps {}
 
-interface IState extends Optional<VideoInfo> {
-  id: string;
+interface IState {
   loaded: boolean;
   locked: boolean;
   authenticating: boolean;
-  streamUrl: string;
+  uploadUrl: string;
   errorText: string;
   errorDescription: string;
 }
 
-export default class Video extends Component<IProps, IState> {
+export default class Upload extends Component<IProps, IState> {
   static contextType = LITCFContext;
 
   api: LITCF_API;
 
   constructor(props: IProps, { gateway, userId }: ILITCFContext) {
     super(props);
-
     this.state = {
-      id: props.videoId,
       loaded: false,
       locked: true,
       authenticating: false,
-      streamUrl: "",
+      uploadUrl: "",
       errorText: "",
       errorDescription: "",
     };
@@ -51,15 +47,7 @@ export default class Video extends Component<IProps, IState> {
     this.api = new LITCF_API(gateway, userId);
   }
 
-  componentDidMount = () => {
-    this.api.getVideoInfo(this.state.id).then((video) =>
-      this.setState({
-        locked: true,
-        loaded: true,
-        ...video,
-      })
-    );
-  };
+  componentDidMount = () => {};
 
   unlockClicked = async () => {
     this.setState({
@@ -73,24 +61,27 @@ export default class Video extends Component<IProps, IState> {
 
       const resourceId = {
         baseUrl: new URL(this.context.gateway).hostname,
-        path: `/video/${this.state.id}`,
+        path: `/upload`,
         orgId: this.context.userId,
-        role: "viewer",
+        role: "",
         extraData: "",
       };
 
+      const acc = await this.api.getACC();
+
       const jwt = await this.context.lit.getSignedToken({
-        accessControlConditions: this.state.acc,
+        accessControlConditions: acc.accUpload,
         chain: this.context.chain,
         authSig,
         resourceId,
       });
 
-      const url = await this.api.getToken(this.state.id, jwt);
+      const url = await this.api.getUploadURL(jwt);
+      console.log(url);
       if (url) {
         this.setState({
           locked: false,
-          streamUrl: url,
+          uploadUrl: url,
         });
       } else {
         throw new Error("Token wasn't accepted by gateway server");
@@ -109,49 +100,28 @@ export default class Video extends Component<IProps, IState> {
 
   render() {
     return (
-      <ImageListItem
-        key={this.state.id}
-        sx={{ width: "30vw", height: "fit-content" }}
-      >
-        {this.state.loaded ? (
-          this.state.locked ? (
-            <Box>
-              <img
-                style={{ width: "100%" }}
-                src={this.state.thumbnail}
-                alt={this.state.name}
-                loading="lazy"
-              />
-              <ImageListItemBar
-                title={this.state.name}
-                actionIcon={
-                  <IconButton
-                    onClick={this.unlockClicked}
-                    sx={{ color: "rgba(255, 255, 255, 0.54)" }}
-                  >
-                    <Lock />
-                  </IconButton>
-                }
-              />
-            </Box>
-          ) : (
-            <Stream controls src={this.state.streamUrl} className="stream" />
-          )
+      <Box>
+        {this.state.locked ? (
+          <Button variant="contained" onClick={this.unlockClicked}>
+            Authenticate
+          </Button>
         ) : (
-          <LinearProgress sx={{ margin: "10px" }} />
+          <Box>
+            <Button>RUN</Button>
+          </Box>
         )}
+
         <Backdrop
           sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
           open={this.state.authenticating}
         >
           <CircularProgress color="inherit" />
         </Backdrop>
-
         <ResultDialog
           title={this.state.errorText}
           description={this.state.errorDescription}
         />
-      </ImageListItem>
+      </Box>
     );
   }
 }

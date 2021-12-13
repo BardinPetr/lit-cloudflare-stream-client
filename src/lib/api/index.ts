@@ -1,6 +1,7 @@
 import axios, { Axios } from "axios";
 import {
   AccessControlConditions,
+  ACCResponse,
   VideoInfo,
   VideoSetupRequest,
 } from "./models";
@@ -33,6 +34,9 @@ export class LITCF_API {
 
   getToken = async (videoId: string, jwt: string): Promise<string> =>
     (await this.axios.get(`/video/${videoId}`, this.genConf(jwt))).data;
+
+  getACC = async (): Promise<ACCResponse> =>
+    (await this.axios.get(`/accs`)).data as ACCResponse;
 
   setupVideo = async (
     id: string,

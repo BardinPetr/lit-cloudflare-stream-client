@@ -1,10 +1,13 @@
 import "./App.css";
 import { LITCF_API } from "./lib/api";
 import { VideoInfo } from "./lib/api/models";
+import Upload from "./lib/components/UploadModal";
 import Video from "./lib/components/Video";
+import RegisterAccountForm from "./lib/components/RegisterAccountForm";
 
 import React, { Component } from "react";
 import { ImageList, List, ListItem } from "@mui/material";
+import { LITCFProvider } from "./lib/context/LITCFContext";
 
 interface IState {
   videos: Array<VideoInfo>;
@@ -33,21 +36,25 @@ export default class App extends Component<{}, IState> {
   render() {
     return (
       <div className="App">
-        <ImageList
-        // sx={{ width: "100%", maxWidth: 360, bgcolor: "background.paper" }}
+        <LITCFProvider
+          gateway={this.GATEWAY_HOST}
+          userId={this.state.userId}
+          chain={"ropsten"}
         >
-          {!this.state.videos.length
-            ? "Loading"
-            : this.state.videos?.map((x) => (
-                <ListItem alignItems="flex-start">
-                  <Video
-                    gateway={this.GATEWAY_HOST}
-                    userId={this.state.userId}
-                    videoId={x.id}
-                  />
-                </ListItem>
-              ))}
-        </ImageList>
+          <ImageList>
+            {!this.state.videos.length
+              ? "Loading"
+              : this.state.videos?.map((x) => (
+                  <ListItem alignItems="flex-start">
+                    <Video videoId={x.id} />
+                  </ListItem>
+                ))}
+          </ImageList>
+
+          <Upload></Upload>
+
+          <RegisterAccountForm></RegisterAccountForm>
+        </LITCFProvider>
       </div>
     );
   }
