@@ -11,6 +11,7 @@ import {
   ButtonGroup,
 } from "@mui/material";
 import DoneOutlineIcon from "@mui/icons-material/DoneOutline";
+import axios from "axios";
 
 import { RegisterRequest, AccessControlConditions } from "../api/models";
 import { LITCFContext, ILITCFContext } from "../context/LITCFContext";
@@ -75,6 +76,12 @@ export default class RegisterAccountForm extends Component<IProps, IState> {
     });
 
     try {
+      const res = await this.api.register(
+        this.state.currentRequest,
+        this.state.registerSecret
+      );
+      if (!res) throw new Error("Failed to register in gateway");
+
       const authSig = await checkAndSignAuthMessage({
         chain: this.context.chain,
       });
@@ -84,7 +91,7 @@ export default class RegisterAccountForm extends Component<IProps, IState> {
         path: "/setup",
         orgId: this.context.userId,
         role: "admin",
-        extraData: `${Date.now()}`,
+        extraData: "",
       };
 
       const ssc_res = await this.context.lit.saveSigningCondition({
@@ -98,8 +105,8 @@ export default class RegisterAccountForm extends Component<IProps, IState> {
         baseUrl: new URL(this.context.gateway).hostname,
         path: `/upload`,
         orgId: this.context.userId,
-        role: "",
-        extraData: `${Date.now()}`,
+        role: "uploader",
+        extraData: "",
       };
 
       const usc_res = await this.context.lit.saveSigningCondition({
@@ -111,16 +118,21 @@ export default class RegisterAccountForm extends Component<IProps, IState> {
 
       if (!usc_res || !ssc_res) throw new Error();
 
-      const res = await this.api.register(
-        this.state.currentRequest,
-        this.state.registerSecret
-      );
-      if (res === null) throw new Error("Failed to register in gateway");
-
       this.setState({ success: true });
       setTimeout(() => this.setState({ success: false }), 5000);
     } catch (ex) {
-      this.setState({ errorText: "Failed to save signing conditions" });
+      this.setState(
+        axios.isAxiosError(ex)
+          ? {
+              errorText: "Gateway rejected request",
+              errorDescription:
+                "Probably you tried to update exsisting account what is prohibited",
+            }
+          : {
+              errorText: "Failed to save signing conditions",
+              errorDescription: "",
+            }
+      );
     } finally {
       this.setState({ running: false });
     }
@@ -209,7 +221,7 @@ export default class RegisterAccountForm extends Component<IProps, IState> {
         <ResultDialog
           title={this.state.errorText}
           description={this.state.errorDescription}
-          onClose={() => this.setState({ errorText: "" })}
+          onClose={() => this.setState({ errorText: "", errorDescription: "" })}
         />
         {this.state.shareModalMode && (
           <ShareModal

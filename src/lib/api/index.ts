@@ -58,4 +58,10 @@ export class LITCF_API {
   register = async (req: RegisterRequest, secret: string): Promise<boolean> =>
     (await this.axios.post(`/register`, req, this.genConf(secret))).status ===
     200;
+
+  uploadFile = async (url: string, file: File): Promise<boolean> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return (await axios.post(url, formData)).status === 200;
+  };
 }

@@ -1,31 +1,28 @@
 import React, { Component } from "react";
 import { LITCF_API } from "../api";
-import { Optional, VideoInfo } from "../api/models";
-import { LitNodeClient, checkAndSignAuthMessage } from "lit-js-sdk";
+import { checkAndSignAuthMessage } from "lit-js-sdk";
 import {
-  IconButton,
-  ImageListItemBar,
-  ImageListItem,
   CircularProgress,
   Box,
   LinearProgress,
   Backdrop,
   Button,
+  Paper,
+  Typography,
 } from "@mui/material";
-import { Lock } from "@mui/icons-material";
-import { Stream } from "@cloudflare/stream-react";
 import ResultDialog from "./ResultDialog";
 import { LITCFContext, ILITCFContext } from "../context/LITCFContext";
 
 interface IProps {}
 
 interface IState {
-  loaded: boolean;
   locked: boolean;
   authenticating: boolean;
+  uploading: boolean;
   uploadUrl: string;
   errorText: string;
   errorDescription: string;
+  videoFile: File | null;
 }
 
 export default class Upload extends Component<IProps, IState> {
@@ -36,12 +33,13 @@ export default class Upload extends Component<IProps, IState> {
   constructor(props: IProps, { gateway, userId }: ILITCFContext) {
     super(props);
     this.state = {
-      loaded: false,
       locked: true,
+      uploading: false,
       authenticating: false,
       uploadUrl: "",
       errorText: "",
       errorDescription: "",
+      videoFile: null,
     };
 
     this.api = new LITCF_API(gateway, userId);
@@ -63,7 +61,7 @@ export default class Upload extends Component<IProps, IState> {
         baseUrl: new URL(this.context.gateway).hostname,
         path: `/upload`,
         orgId: this.context.userId,
-        role: "",
+        role: "uploader",
         extraData: "",
       };
 
@@ -77,7 +75,6 @@ export default class Upload extends Component<IProps, IState> {
       });
 
       const url = await this.api.getUploadURL(jwt);
-      console.log(url);
       if (url) {
         this.setState({
           locked: false,
@@ -98,30 +95,68 @@ export default class Upload extends Component<IProps, IState> {
     }
   };
 
+  fileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files?.length !== 1)
+      this.setState({ errorText: "Files count invalid" });
+    else if (files[0].size > 20971520)
+      this.setState({ errorText: "File can't exceed 20MB in this demo" });
+    else this.setState({ videoFile: files[0] });
+  };
+
+  uploadVideo = async () => {
+    this.setState({ uploading: true });
+    try {
+      const res = await this.api.uploadFile(
+        this.state.uploadUrl,
+        this.state.videoFile!
+      );
+
+      if (!res) throw new Error();
+      this.setState({ errorText: "Success", locked: true });
+    } catch (ex) {
+      this.setState({ errorText: "Unable to upload file" });
+    } finally {
+      this.setState({ uploading: false });
+    }
+  };
+
   render() {
     return (
       <Box>
-        {this.state.locked ? (
-          <Button variant="contained" onClick={this.unlockClicked}>
-            Authenticate
-          </Button>
-        ) : (
-          <Box>
-            <Button>RUN</Button>
-          </Box>
-        )}
+        <Paper sx={{ width: "fit-content", margin: "5px", padding: "5px" }}>
+          <Typography variant="h6">Upload Video</Typography>
 
-        <Backdrop
-          sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
-          open={this.state.authenticating}
-        >
-          <CircularProgress color="inherit" />
-        </Backdrop>
-        <ResultDialog
-          onClose={() => this.setState({ errorText: "" })}
-          title={this.state.errorText}
-          description={this.state.errorDescription}
-        />
+          {this.state.locked ? (
+            <Button variant="contained" onClick={this.unlockClicked}>
+              Authenticate
+            </Button>
+          ) : (
+            <Box>
+              <input type="file" onChange={this.fileSelected} />
+              <Button
+                disabled={!this.state.videoFile || this.state.uploading}
+                onClick={this.uploadVideo}
+              >
+                Upload
+              </Button>
+              <br />
+              {this.state.uploading && <LinearProgress />}
+            </Box>
+          )}
+
+          <Backdrop
+            sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
+            open={this.state.authenticating}
+          >
+            <CircularProgress color="inherit" />
+          </Backdrop>
+          <ResultDialog
+            onClose={() => this.setState({ errorText: "" })}
+            title={this.state.errorText}
+            description={this.state.errorDescription}
+          />
+        </Paper>
       </Box>
     );
   }
