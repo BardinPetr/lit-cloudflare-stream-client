@@ -4,6 +4,7 @@ import { VideoInfo } from "./lib/api/models";
 import Upload from "./lib/components/UploadModal";
 import Video from "./lib/components/Video";
 import RegisterAccountForm from "./lib/components/RegisterAccountForm";
+import VideoSetup from "./lib/components/VideoSetup";
 
 import React, { Component } from "react";
 import { ImageList, List, ListItem } from "@mui/material";
@@ -51,9 +52,11 @@ export default class App extends Component<{}, IState> {
                 ))}
           </ImageList>
 
-          <Upload></Upload>
+          <Upload />
 
-          <RegisterAccountForm></RegisterAccountForm>
+          <VideoSetup />
+
+          <RegisterAccountForm />
         </LITCFProvider>
       </div>
     );

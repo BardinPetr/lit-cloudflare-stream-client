@@ -20,8 +20,8 @@ interface IState {
   authenticating: boolean;
   uploading: boolean;
   uploadUrl: string;
-  errorText: string;
-  errorDescription: string;
+  modalText: string;
+  modalDescription: string;
   videoFile: File | null;
 }
 
@@ -37,8 +37,8 @@ export default class Upload extends Component<IProps, IState> {
       uploading: false,
       authenticating: false,
       uploadUrl: "",
-      errorText: "",
-      errorDescription: "",
+      modalText: "",
+      modalDescription: "",
       videoFile: null,
     };
 
@@ -85,8 +85,7 @@ export default class Upload extends Component<IProps, IState> {
       }
     } catch (ex) {
       this.setState({
-        errorText: "Failed to unlock",
-        // errorDescription: ex,
+        modalText: "Failed to unlock",
       });
     } finally {
       this.setState({
@@ -98,9 +97,9 @@ export default class Upload extends Component<IProps, IState> {
   fileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files?.length !== 1)
-      this.setState({ errorText: "Files count invalid" });
+      this.setState({ modalText: "Files count invalid" });
     else if (files[0].size > 20971520)
-      this.setState({ errorText: "File can't exceed 20MB in this demo" });
+      this.setState({ modalText: "File can't exceed 20MB in this demo" });
     else this.setState({ videoFile: files[0] });
   };
 
@@ -113,9 +112,9 @@ export default class Upload extends Component<IProps, IState> {
       );
 
       if (!res) throw new Error();
-      this.setState({ errorText: "Success", locked: true });
+      this.setState({ modalText: "Success", locked: true });
     } catch (ex) {
-      this.setState({ errorText: "Unable to upload file" });
+      this.setState({ modalText: "Unable to upload file" });
     } finally {
       this.setState({ uploading: false });
     }
@@ -152,9 +151,9 @@ export default class Upload extends Component<IProps, IState> {
             <CircularProgress color="inherit" />
           </Backdrop>
           <ResultDialog
-            onClose={() => this.setState({ errorText: "" })}
-            title={this.state.errorText}
-            description={this.state.errorDescription}
+            onClose={() => this.setState({ modalText: "" })}
+            title={this.state.modalText}
+            description={this.state.modalDescription}
           />
         </Paper>
       </Box>
