@@ -2,6 +2,7 @@ import axios, { Axios } from "axios";
 import {
   AccessControlConditions,
   ACCResponse,
+  RegisterRequest,
   VideoInfo,
   VideoSetupRequest,
 } from "./models";
@@ -53,4 +54,8 @@ export class LITCF_API {
         this.genConf(jwt)
       )
     ).status === 200;
+
+  register = async (req: RegisterRequest, secret: string): Promise<boolean> =>
+    (await this.axios.post(`/register`, req, this.genConf(secret))).status ===
+    200;
 }

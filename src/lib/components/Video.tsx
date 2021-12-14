@@ -148,6 +148,7 @@ export default class Video extends Component<IProps, IState> {
         </Backdrop>
 
         <ResultDialog
+          onClose={() => this.setState({ errorText: "" })}
           title={this.state.errorText}
           description={this.state.errorDescription}
         />

@@ -118,6 +118,7 @@ export default class Upload extends Component<IProps, IState> {
           <CircularProgress color="inherit" />
         </Backdrop>
         <ResultDialog
+          onClose={() => this.setState({ errorText: "" })}
           title={this.state.errorText}
           description={this.state.errorDescription}
         />

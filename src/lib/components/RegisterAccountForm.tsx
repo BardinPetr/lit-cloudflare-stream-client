@@ -1,9 +1,6 @@
 import React, { Component } from "react";
-import { LITCF_API } from "../api";
-import { RegisterRequest } from "../api/models";
 import { checkAndSignAuthMessage } from "lit-js-sdk";
 import { ShareModal } from "lit-access-control-conditions-modal";
-
 import {
   Box,
   LinearProgress,
@@ -13,8 +10,12 @@ import {
   TextField,
   ButtonGroup,
 } from "@mui/material";
-import ResultDialog from "./ResultDialog";
+import DoneOutlineIcon from "@mui/icons-material/DoneOutline";
+
+import { RegisterRequest, AccessControlConditions } from "../api/models";
 import { LITCFContext, ILITCFContext } from "../context/LITCFContext";
+import ResultDialog from "./ResultDialog";
+import { LITCF_API } from "../api";
 
 interface IProps {}
 
@@ -22,7 +23,10 @@ interface IState {
   errorText: string;
   errorDescription: string;
   running: boolean;
+  success: boolean;
   currentRequest: RegisterRequest;
+  registerSecret: string;
+  shareModalMode: "accUpload" | "accSetup" | null;
 }
 
 export default class RegisterAccountForm extends Component<IProps, IState> {
@@ -36,38 +40,89 @@ export default class RegisterAccountForm extends Component<IProps, IState> {
       errorText: "",
       errorDescription: "",
       running: false,
+      success: false,
+      registerSecret:
+        "yRJj169LRxiCpoE6Wduqz9UtYoKa4AKPRwUR90ASXgE4OZVHd7ZtpyEK5VTAZ5oe",
       currentRequest: {
-        account: "",
-        token: "",
+        account: "ad689a4c7ee776c5c881c7e04cad097b",
+        token: "CatNqMbImN9_yy8-VwadJprn9kEuSQEEZpXVdlYc",
         accSetup: [],
         accUpload: [],
       },
+      shareModalMode: null,
     };
 
     this.api = new LITCF_API(gateway, userId);
   }
 
-  selectACC = async (type: string) => {};
+  onACCSelected = (accs: AccessControlConditions) => {
+    if (this.state.shareModalMode === null) {
+      this.setState({ errorText: "Failed to select ACCs" });
+      return;
+    }
+    this.setState({
+      currentRequest: {
+        ...this.state.currentRequest,
+        [this.state.shareModalMode]: accs,
+      },
+      shareModalMode: null,
+    });
+  };
 
   register = async () => {
+    this.setState({
+      running: true,
+    });
+
     try {
       const authSig = await checkAndSignAuthMessage({
         chain: this.context.chain,
       });
 
-      const resourceId = {
+      const setupResourceId = {
+        baseUrl: new URL(this.context.gateway).hostname,
+        path: "/setup",
+        orgId: this.context.userId,
+        role: "admin",
+        extraData: `${Date.now()}`,
+      };
+
+      const ssc_res = await this.context.lit.saveSigningCondition({
+        accessControlConditions: this.state.currentRequest.accSetup,
+        resourceId: setupResourceId,
+        chain: this.context.chain,
+        authSig,
+      });
+
+      const uploadResourceId = {
         baseUrl: new URL(this.context.gateway).hostname,
         path: `/upload`,
         orgId: this.context.userId,
         role: "",
-        extraData: "",
+        extraData: `${Date.now()}`,
       };
-    } catch (ex) {
-      this.setState({
-        errorText: "Failed to unlock",
-        // errorDescription: ex,
+
+      const usc_res = await this.context.lit.saveSigningCondition({
+        accessControlConditions: this.state.currentRequest.accUpload,
+        resourceId: uploadResourceId,
+        chain: this.context.chain,
+        authSig,
       });
+
+      if (!usc_res || !ssc_res) throw new Error();
+
+      const res = await this.api.register(
+        this.state.currentRequest,
+        this.state.registerSecret
+      );
+      if (res === null) throw new Error("Failed to register in gateway");
+
+      this.setState({ success: true });
+      setTimeout(() => this.setState({ success: false }), 5000);
+    } catch (ex) {
+      this.setState({ errorText: "Failed to save signing conditions" });
     } finally {
+      this.setState({ running: false });
     }
   };
 
@@ -82,6 +137,14 @@ export default class RegisterAccountForm extends Component<IProps, IState> {
           <Box sx={{ "& .MuiTextField-root": { m: 1, width: "25ch" } }}>
             <TextField
               onChange={({ target }) =>
+                this.setState({ registerSecret: target.value })
+              }
+              value={this.state.registerSecret}
+              label="Register Secret"
+              variant="outlined"
+            />
+            <TextField
+              onChange={({ target }) =>
                 this.setState({
                   currentRequest: {
                     ...this.state.currentRequest,
@@ -90,7 +153,7 @@ export default class RegisterAccountForm extends Component<IProps, IState> {
                 })
               }
               value={this.state.currentRequest.account}
-              label="Register Secret"
+              label="CloudFlare Account ID"
               variant="outlined"
             />
             <TextField
@@ -103,45 +166,58 @@ export default class RegisterAccountForm extends Component<IProps, IState> {
                 })
               }
               value={this.state.currentRequest.token}
-              label="CF User ID"
+              label="CloudFlare Stream Token"
               variant="outlined"
             />
             <br />
             <ButtonGroup variant="outlined" aria-label="outlined button group">
-              <Button onClick={() => this.selectACC("upload")}>
+              <Button
+                onClick={() =>
+                  this.setState({ shareModalMode: "accUpload" as "accUpload" })
+                }
+              >
                 Select Upload ACC
               </Button>
-              <Button onClick={() => this.selectACC("setup")}>
+              <Button
+                onClick={() =>
+                  this.setState({ shareModalMode: "accSetup" as "accSetup" })
+                }
+              >
                 Select Setup ACC
               </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                disabled={
+                  this.state.running ||
+                  this.state.success ||
+                  !this.state.currentRequest.accSetup.length ||
+                  !this.state.currentRequest.accUpload.length ||
+                  !this.state.currentRequest.account.length ||
+                  !this.state.currentRequest.token.length
+                }
+                onClick={this.register}
+              >
+                Register
+              </Button>
+              {this.state.success && <DoneOutlineIcon color="success" />}
             </ButtonGroup>
             {this.state.running && <LinearProgress />}
             <br />
-            <Button
-              variant="contained"
-              color="primary"
-              disabled={this.state.running}
-              onClick={this.register}
-            >
-              Register
-            </Button>
           </Box>
         </Paper>
         <ResultDialog
           title={this.state.errorText}
           description={this.state.errorDescription}
+          onClose={() => this.setState({ errorText: "" })}
         />
-        <ShareModal
-          onClose={() => {}}
-          sharingItems={[{ name: "1" }]}
-          onAccessControlConditionsSelected={(x: any) => {
-            console.log(x);
-          }}
-          getSharingLink={(x: any) => {
-            console.log(`gsl${x}}`);
-            return "23";
-          }}
-        />
+        {this.state.shareModalMode && (
+          <ShareModal
+            onClose={() => this.setState({ shareModalMode: null })}
+            sharingItems={[{ name: this.state.shareModalMode }]}
+            onAccessControlConditionsSelected={this.onACCSelected}
+          />
+        )}
       </Box>
     );
   }
