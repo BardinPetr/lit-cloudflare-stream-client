@@ -42,11 +42,10 @@ export default class RegisterAccountForm extends Component<IProps, IState> {
       errorDescription: "",
       running: false,
       success: false,
-      registerSecret:
-        "yRJj169LRxiCpoE6Wduqz9UtYoKa4AKPRwUR90ASXgE4OZVHd7ZtpyEK5VTAZ5oe",
+      registerSecret: "",
       currentRequest: {
-        account: "ad689a4c7ee776c5c881c7e04cad097b",
-        token: "CatNqMbImN9_yy8-VwadJprn9kEuSQEEZpXVdlYc",
+        account: "",
+        token: "",
         accSetup: [],
         accUpload: [],
       },
@@ -148,6 +147,7 @@ export default class RegisterAccountForm extends Component<IProps, IState> {
 
           <Box sx={{ "& .MuiTextField-root": { m: 1, width: "25ch" } }}>
             <TextField
+              type="password"
               onChange={({ target }) =>
                 this.setState({ registerSecret: target.value })
               }
@@ -169,6 +169,7 @@ export default class RegisterAccountForm extends Component<IProps, IState> {
               variant="outlined"
             />
             <TextField
+              type="password"
               onChange={({ target }) =>
                 this.setState({
                   currentRequest: {

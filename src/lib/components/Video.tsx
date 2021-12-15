@@ -4,12 +4,15 @@ import { Optional, VideoInfo } from "../api/models";
 import { checkAndSignAuthMessage } from "lit-js-sdk";
 import {
   IconButton,
-  ImageListItemBar,
-  ImageListItem,
   CircularProgress,
   Box,
   LinearProgress,
   Backdrop,
+  CardActions,
+  Typography,
+  CardContent,
+  CardMedia,
+  Card,
 } from "@mui/material";
 import { Lock } from "@mui/icons-material";
 import { Stream } from "@cloudflare/stream-react";
@@ -18,6 +21,7 @@ import { LITCFContext, ILITCFContext } from "../context/LITCFContext";
 
 interface IProps {
   videoId: string;
+  height?: number;
 }
 
 interface IState extends Optional<VideoInfo> {
@@ -28,6 +32,7 @@ interface IState extends Optional<VideoInfo> {
   streamUrl: string;
   errorText: string;
   errorDescription: string;
+  height: number;
 }
 
 export default class Video extends Component<IProps, IState> {
@@ -46,19 +51,23 @@ export default class Video extends Component<IProps, IState> {
       streamUrl: "",
       errorText: "",
       errorDescription: "",
+      height: props.height ?? 200,
     };
 
     this.api = new LITCF_API(gateway, userId);
   }
 
+  init = async () => {
+    const video = await this.api.getVideoInfo(this.state.id);
+    this.setState({
+      locked: true,
+      loaded: true,
+      ...video,
+    });
+  };
+
   componentDidMount = () => {
-    this.api.getVideoInfo(this.state.id).then((video) =>
-      this.setState({
-        locked: true,
-        loaded: true,
-        ...video,
-      })
-    );
+    this.init().catch(console.error);
   };
 
   unlockClicked = async () => {
@@ -67,6 +76,8 @@ export default class Video extends Component<IProps, IState> {
     });
 
     try {
+      await this.init();
+
       const authSig = await checkAndSignAuthMessage({
         chain: this.context.chain,
       });
@@ -109,34 +120,33 @@ export default class Video extends Component<IProps, IState> {
 
   render() {
     return (
-      <ImageListItem
-        key={this.state.id}
-        sx={{ width: "30vw", height: "fit-content" }}
-      >
+      <Box>
         {this.state.loaded ? (
-          this.state.locked ? (
-            <Box>
-              <img
-                style={{ width: "100%" }}
-                src={this.state.thumbnail}
-                alt={this.state.name}
-                loading="lazy"
+          <Card>
+            {this.state.locked ? (
+              <CardMedia
+                component="img"
+                height={this.state.height}
+                image={this.state.thumbnail}
               />
-              <ImageListItemBar
-                title={this.state.name}
-                actionIcon={
-                  <IconButton
-                    onClick={this.unlockClicked}
-                    sx={{ color: "rgba(255, 255, 255, 0.54)" }}
-                  >
-                    <Lock />
-                  </IconButton>
-                }
+            ) : (
+              <Stream
+                controls
+                responsive={true}
+                src={this.state.streamUrl}
+                className="stream"
               />
-            </Box>
-          ) : (
-            <Stream controls src={this.state.streamUrl} className="stream" />
-          )
+            )}
+            <CardContent>
+              <Typography gutterBottom variant="h6" component="div">
+                {this.state.name}
+                <IconButton onClick={this.unlockClicked}>
+                  <Lock />
+                </IconButton>
+              </Typography>
+            </CardContent>
+            {this.state.locked && <CardActions></CardActions>}
+          </Card>
         ) : (
           <LinearProgress sx={{ margin: "10px" }} />
         )}
@@ -152,7 +162,7 @@ export default class Video extends Component<IProps, IState> {
           title={this.state.errorText}
           description={this.state.errorDescription}
         />
-      </ImageListItem>
+      </Box>
     );
   }
 }

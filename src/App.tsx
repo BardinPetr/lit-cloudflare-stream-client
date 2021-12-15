@@ -1,64 +1,101 @@
 import "./App.css";
-import { LITCF_API } from "./lib/api";
+import {
+  Video,
+  VideoSetup,
+  RegisterAccountForm,
+  Upload,
+  LITCFProvider,
+  LITCF_API,
+} from "./lib";
 import { VideoInfo } from "./lib/api/models";
-import Upload from "./lib/components/UploadModal";
-import Video from "./lib/components/Video";
-import RegisterAccountForm from "./lib/components/RegisterAccountForm";
-import VideoSetup from "./lib/components/VideoSetup";
 
-import React, { Component } from "react";
-import { ImageList, List, ListItem } from "@mui/material";
-import { LITCFProvider } from "./lib/context/LITCFContext";
+import { Component } from "react";
+import {
+  Button,
+  ImageList,
+  ImageListItem,
+  TextField,
+  Grid,
+  Box,
+} from "@mui/material";
 
 interface IState {
   videos: Array<VideoInfo>;
+  chain: string;
   userId: string;
 }
 
 export default class App extends Component<{}, IState> {
   GATEWAY_HOST = "http://localhost:8787/";
 
-  api: LITCF_API;
-
   constructor(props: {}) {
     super(props);
     this.state = {
       videos: [],
+      chain: "ropsten",
       userId: "ad689a4c7ee776c5c881c7e04cad097b",
     };
-
-    this.api = new LITCF_API(this.GATEWAY_HOST, this.state.userId);
-
-    this.api.listVideos().then((videos) => this.setState({ videos }));
   }
 
-  componentDidMount() {}
+  componentDidMount = () => this.init();
+
+  init = () => {
+    this.setState({ videos: [] });
+    new LITCF_API(this.GATEWAY_HOST, this.state.userId)
+      .listVideos()
+      .then((videos) => this.setState({ videos }));
+  };
 
   render() {
     return (
-      <div className="App">
+      <Box m={4}>
+        <TextField
+          label="Chain"
+          value={this.state.chain}
+          margin="normal"
+          disabled={true}
+          onChange={({ target }) => this.setState({ chain: target.value })}
+        />
+        <TextField
+          label="CF User ID"
+          margin="normal"
+          value={this.state.userId}
+          onChange={({ target }) => this.setState({ userId: target.value })}
+        />
+        <Button onClick={this.init}>Set</Button>
+
         <LITCFProvider
           gateway={this.GATEWAY_HOST}
           userId={this.state.userId}
-          chain={"ropsten"}
+          chain={this.state.chain}
         >
-          <ImageList>
-            {!this.state.videos.length
-              ? "Loading"
-              : this.state.videos?.map((x) => (
-                  <ListItem alignItems="flex-start">
-                    <Video videoId={x.id} />
-                  </ListItem>
-                ))}
-          </ImageList>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <Upload />
 
-          <Upload />
+              <VideoSetup />
 
-          <VideoSetup />
+              <RegisterAccountForm />
+            </Grid>
 
-          <RegisterAccountForm />
+            <Grid item xs={5}>
+              <ImageList
+                cols={2}
+                rowHeight={150}
+                sx={{ width: "100%", height: "80vw" }}
+              >
+                {!this.state.videos.length
+                  ? "Loading"
+                  : this.state.videos?.map((x) => (
+                      <ImageListItem key={x.id} sx={{ maxWidth: "30vw" }}>
+                        <Video videoId={x.id} />
+                      </ImageListItem>
+                    ))}
+              </ImageList>
+            </Grid>
+          </Grid>
         </LITCFProvider>
-      </div>
+      </Box>
     );
   }
 }

@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import { checkAndSignAuthMessage } from "lit-js-sdk";
 import { ShareModal } from "lit-access-control-conditions-modal";
 import {
@@ -7,14 +7,12 @@ import {
   Button,
   Typography,
   Paper,
-  TextField,
   ButtonGroup,
   Select,
   FormControl,
   MenuItem,
   InputLabel,
   IconButton,
-  Stack,
 } from "@mui/material";
 import { SelectChangeEvent } from "@mui/material/Select";
 import CachedIcon from "@mui/icons-material/Cached";
@@ -65,7 +63,6 @@ export default class RegisterAccountForm extends Component<IProps, IState> {
 
   updateList = async () => {
     const videos = await this.api.listVideos();
-    console.log(videos);
     this.setState({ videos: videos.filter((v) => v.acc.length === 0) });
   };
 
@@ -202,7 +199,7 @@ export default class RegisterAccountForm extends Component<IProps, IState> {
                 </FormControl>
               )}
               <IconButton color="primary">
-                <CachedIcon />
+                <CachedIcon onClick={this.updateList} />
               </IconButton>
               <br />
               <ButtonGroup>
