@@ -29,7 +29,6 @@ interface IState extends Optional<VideoInfo> {
   loaded: boolean;
   locked: boolean;
   authenticating: boolean;
-  streamUrl: string;
   errorText: string;
   errorDescription: string;
   height: number;
@@ -48,7 +47,6 @@ export default class Video extends Component<IProps, IState> {
       loaded: false,
       locked: true,
       authenticating: false,
-      streamUrl: "",
       errorText: "",
       errorDescription: "",
       height: props.height ?? 200,
@@ -60,9 +58,10 @@ export default class Video extends Component<IProps, IState> {
   init = async () => {
     const video = await this.api.getVideoInfo(this.state.id);
     this.setState({
-      locked: true,
-      loaded: true,
       ...video,
+      locked: video.acc.length > 0,
+      loaded: true,
+      stream: video.id,
     });
   };
 
@@ -101,7 +100,7 @@ export default class Video extends Component<IProps, IState> {
       if (url) {
         this.setState({
           locked: false,
-          streamUrl: url,
+          stream: url,
         });
       } else {
         throw new Error("Token wasn't accepted by gateway server");
@@ -133,19 +132,20 @@ export default class Video extends Component<IProps, IState> {
               <Stream
                 controls
                 responsive={true}
-                src={this.state.streamUrl}
+                src={this.state.stream || ""}
                 className="stream"
               />
             )}
             <CardContent>
               <Typography gutterBottom variant="h6" component="div">
                 {this.state.name}
-                <IconButton onClick={this.unlockClicked}>
-                  <Lock />
-                </IconButton>
+                {this.state.locked && (
+                  <IconButton onClick={this.unlockClicked}>
+                    <Lock />
+                  </IconButton>
+                )}
               </Typography>
             </CardContent>
-            {this.state.locked && <CardActions></CardActions>}
           </Card>
         ) : (
           <LinearProgress sx={{ margin: "10px" }} />

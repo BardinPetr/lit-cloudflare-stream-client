@@ -93,7 +93,7 @@ export default class RegisterAccountForm extends Component<IProps, IState> {
         path: `/setup`,
         orgId: this.context.userId,
         role: "admin",
-        extraData: "",
+        extraData: "admin",
       };
 
       const acc = await this.api.getACC();

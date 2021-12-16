@@ -62,11 +62,12 @@ export default class Upload extends Component<IProps, IState> {
         path: `/upload`,
         orgId: this.context.userId,
         role: "uploader",
-        extraData: "",
+        extraData: "uploader",
       };
 
       const acc = await this.api.getACC();
-
+      console.log(acc);
+      console.log(resourceId);
       const jwt = await this.context.lit.getSignedToken({
         accessControlConditions: acc.accUpload,
         chain: this.context.chain,

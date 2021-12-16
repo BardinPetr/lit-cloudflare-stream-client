@@ -26,7 +26,7 @@ interface IState {
 }
 
 export default class App extends Component<{}, IState> {
-  GATEWAY_HOST = "http://localhost:8787/";
+  GATEWAY_HOST = "https://lit-cloudflare-stream-worker.bardin-petr.workers.dev";
 
   constructor(props: {}) {
     super(props);

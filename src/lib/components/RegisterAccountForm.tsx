@@ -90,7 +90,7 @@ export default class RegisterAccountForm extends Component<IProps, IState> {
         path: "/setup",
         orgId: this.context.userId,
         role: "admin",
-        extraData: "",
+        extraData: "admin",
       };
 
       const ssc_res = await this.context.lit.saveSigningCondition({
@@ -105,7 +105,7 @@ export default class RegisterAccountForm extends Component<IProps, IState> {
         path: `/upload`,
         orgId: this.context.userId,
         role: "uploader",
-        extraData: "",
+        extraData: "uploader",
       };
 
       const usc_res = await this.context.lit.saveSigningCondition({
