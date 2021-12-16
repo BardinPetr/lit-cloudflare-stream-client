@@ -4,7 +4,7 @@ This is a React Components library which in pair with [backend](https://github.c
 
 > **It is highly recommended to read documentation in [server repo](https://github.com/BardinPetr/lit-cloudflare-stream-worker) first as I won't duplicate here how the system works**
 
-> Watch [demo](https://youtu.be/MYa6ne3MU7w). Or try it yourself [here](https://litcf.bardinpa.ru/). Register token is `yRJj169LRxiCpoE6Wduqz9UtYoKa4AKPRwUR90ASXgE4OZVHd7ZtpyEK5VTAZ5oe`. For main account all ACCs are set to non-zero eth balance.
+> Watch [demo](https://youtu.be/MYa6ne3MU7w). Or try it yourself [here](https://litcf.bardinpa.ru/). Register token is `yRJj169LRxiCpoE6Wduqz9UtYoKa4AKPRwUR90ASXgE4OZVHd7ZtpyEK5VTAZ5oe`. For main account all ACCs are set to balance >=0.1ETH.
 
 This repo also provides demo application, which serves firstly to demonstrate features of components you can easily integrate into any React project. All components are done in configuration-minimalistic way to easily integrate it.
 
